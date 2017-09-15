@@ -47,7 +47,9 @@ public class MainActivity extends AppCompatActivity {
         NavigationItem loginAutoComplete = findViewById(R.id.standardLoginWithAutoCompleteButton);
         NavigationItem emailCompose = findViewById(R.id.emailComposeButton);
         NavigationItem creditCardCompoundView = findViewById(R.id.creditCardCompoundViewButton);
+        NavigationItem creditCardDatePicker = findViewById(R.id.creditCardDatePickerButton);
         NavigationItem mulitplePartitions = findViewById(R.id.multiplePartitionsButton);
+        NavigationItem loginWebView = findViewById(R.id.webviewSignInButton);
         loginEditTexts.setNavigationButtonClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -84,10 +86,22 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(CreditCardCompoundViewActivity.getStartActivityIntent(MainActivity.this));
             }
         });
+        creditCardDatePicker.setNavigationButtonClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(CreditCardDatePickerActivity.getStartActivityIntent(MainActivity.this));
+            }
+        });
         mulitplePartitions.setNavigationButtonClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 startActivity(MultiplePartitionsActivity.getStartActivityIntent(MainActivity.this));
+            }
+        });
+        loginWebView.setNavigationButtonClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(WebViewSignInActivity.getStartActivityIntent(MainActivity.this));
             }
         });
     }
