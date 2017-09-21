@@ -25,6 +25,9 @@ import android.widget.Toast;
 
 import com.example.android.autofillframework.R;
 
+/**
+ * Activity that uses a virtual views for Username/Password text fields.
+ */
 public class VirtualSignInActivity extends AppCompatActivity {
 
     private CustomVirtualView mCustomVirtualView;
@@ -45,10 +48,12 @@ public class VirtualSignInActivity extends AppCompatActivity {
 
         mCustomVirtualView = (CustomVirtualView) findViewById(R.id.custom_view);
 
-        mUsernameLine = mCustomVirtualView.addLine("usernameField",
+        CustomVirtualView.Partition credentialsPartition =
+                mCustomVirtualView.addPartition(getString(R.string.partition_credentials));
+        mUsernameLine = credentialsPartition.addLine("username", View.AUTOFILL_TYPE_TEXT,
                 getString(R.string.username_label),
                 "         ", false, View.AUTOFILL_HINT_USERNAME);
-        mPasswordLine = mCustomVirtualView.addLine("passwordField",
+        mPasswordLine = credentialsPartition.addLine("password", View.AUTOFILL_TYPE_TEXT,
                 getString(R.string.password_label),
                 "         ", true, View.AUTOFILL_HINT_PASSWORD);
 

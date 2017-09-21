@@ -22,14 +22,12 @@ import android.service.autofill.FillResponse;
 import android.service.autofill.SaveInfo;
 import android.support.annotation.DrawableRes;
 import android.util.Log;
-import android.view.View;
 import android.view.autofill.AutofillId;
 import android.widget.RemoteViews;
 
 import com.example.android.autofillframework.R;
 import com.example.android.autofillframework.multidatasetservice.model.FilledAutofillFieldCollection;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -45,7 +43,8 @@ public final class AutofillHelper {
      * client View.
      */
     public static Dataset newDataset(Context context,
-            AutofillFieldMetadataCollection autofillFields, FilledAutofillFieldCollection filledAutofillFieldCollection, boolean datasetAuth) {
+            AutofillFieldMetadataCollection autofillFields,
+            FilledAutofillFieldCollection filledAutofillFieldCollection, boolean datasetAuth) {
         String datasetName = filledAutofillFieldCollection.getDatasetName();
         if (datasetName != null) {
             Dataset.Builder datasetBuilder;
@@ -53,14 +52,16 @@ public final class AutofillHelper {
                 datasetBuilder = new Dataset.Builder
                         (newRemoteViews(context.getPackageName(), datasetName,
                                 R.drawable.ic_lock_black_24dp));
-                IntentSender sender = AuthActivity.getAuthIntentSenderForDataset(context, datasetName);
+                IntentSender sender =
+                        AuthActivity.getAuthIntentSenderForDataset(context, datasetName);
                 datasetBuilder.setAuthentication(sender);
             } else {
                 datasetBuilder = new Dataset.Builder
                         (newRemoteViews(context.getPackageName(), datasetName,
                                 R.drawable.ic_person_black_24dp));
             }
-            boolean setValueAtLeastOnce = filledAutofillFieldCollection.applyToFields(autofillFields, datasetBuilder);
+            boolean setValueAtLeastOnce =
+                    filledAutofillFieldCollection.applyToFields(autofillFields, datasetBuilder);
             if (setValueAtLeastOnce) {
                 return datasetBuilder.build();
             }
@@ -70,7 +71,8 @@ public final class AutofillHelper {
 
     public static RemoteViews newRemoteViews(String packageName, String remoteViewsText,
             @DrawableRes int drawableId) {
-        RemoteViews presentation = new RemoteViews(packageName, R.layout.multidataset_service_list_item);
+        RemoteViews presentation =
+                new RemoteViews(packageName, R.layout.multidataset_service_list_item);
         presentation.setTextViewText(R.id.text, remoteViewsText);
         presentation.setImageViewResource(R.id.icon, drawableId);
         return presentation;
@@ -87,9 +89,11 @@ public final class AutofillHelper {
         if (clientFormDataMap != null) {
             Set<String> datasetNames = clientFormDataMap.keySet();
             for (String datasetName : datasetNames) {
-                FilledAutofillFieldCollection filledAutofillFieldCollection = clientFormDataMap.get(datasetName);
+                FilledAutofillFieldCollection filledAutofillFieldCollection =
+                        clientFormDataMap.get(datasetName);
                 if (filledAutofillFieldCollection != null) {
-                    Dataset dataset = newDataset(context, autofillFields, filledAutofillFieldCollection, datasetAuth);
+                    Dataset dataset = newDataset(context, autofillFields,
+                            filledAutofillFieldCollection, datasetAuth);
                     if (dataset != null) {
                         responseBuilder.addDataset(dataset);
                     }
@@ -111,35 +115,17 @@ public final class AutofillHelper {
         String[] filteredHints = new String[hints.length];
         int i = 0;
         for (String hint : hints) {
-            if (AutofillHelper.isValidHint(hint)) {
+            if (AutofillHints.isValidHint(hint)) {
                 filteredHints[i++] = hint;
             } else {
                 Log.d(TAG, "Invalid autofill hint: " + hint);
             }
         }
+        if (i == 0) {
+            return null;
+        }
         String[] finalFilteredHints = new String[i];
         System.arraycopy(filteredHints, 0, finalFilteredHints, 0, i);
         return finalFilteredHints;
-    }
-
-    public static boolean isValidHint(String hint) {
-        switch (hint) {
-            case View.AUTOFILL_HINT_CREDIT_CARD_EXPIRATION_DATE:
-            case View.AUTOFILL_HINT_CREDIT_CARD_EXPIRATION_DAY:
-            case View.AUTOFILL_HINT_CREDIT_CARD_EXPIRATION_MONTH:
-            case View.AUTOFILL_HINT_CREDIT_CARD_EXPIRATION_YEAR:
-            case View.AUTOFILL_HINT_CREDIT_CARD_NUMBER:
-            case View.AUTOFILL_HINT_CREDIT_CARD_SECURITY_CODE:
-            case View.AUTOFILL_HINT_EMAIL_ADDRESS:
-            case View.AUTOFILL_HINT_PHONE:
-            case View.AUTOFILL_HINT_NAME:
-            case View.AUTOFILL_HINT_PASSWORD:
-            case View.AUTOFILL_HINT_POSTAL_ADDRESS:
-            case View.AUTOFILL_HINT_POSTAL_CODE:
-            case View.AUTOFILL_HINT_USERNAME:
-                return true;
-            default:
-                return false;
-        }
     }
 }

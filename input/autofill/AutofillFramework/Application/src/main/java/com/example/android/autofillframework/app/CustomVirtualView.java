@@ -16,12 +16,16 @@
 package com.example.android.autofillframework.app;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
+import android.util.ArrayMap;
+import android.util.ArraySet;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
@@ -32,66 +36,148 @@ import android.view.autofill.AutofillManager;
 import android.view.autofill.AutofillValue;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.android.autofillframework.CommonUtil;
+import com.example.android.autofillframework.R;
+import com.google.common.base.Preconditions;
+
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 import static com.example.android.autofillframework.CommonUtil.bundleToString;
 
 /**
- * Custom View with virtual child views for Username/Password text fields.
+ * A custom View with a virtual structure for fields supporting {@link View#getAutofillHints()}
  */
 public class CustomVirtualView extends View {
 
+    protected static final boolean DEBUG = true;
+    protected static final boolean VERBOSE = false;
     private static final String TAG = "CustomView";
-    private static final boolean DEBUG = true;
-    private static final boolean VERBOSE = false;
-
-    private static final int TOP_MARGIN = 100;
-    private static final int LEFT_MARGIN = 100;
-    private static final int TEXT_HEIGHT = 90;
+    private static final int DEFAULT_TEXT_HEIGHT_DP = 34;
     private static final int VERTICAL_GAP = 10;
-    private static final int LINE_HEIGHT = TEXT_HEIGHT + VERTICAL_GAP;
     private static final int UNFOCUSED_COLOR = Color.BLACK;
     private static final int FOCUSED_COLOR = Color.RED;
     private static int sNextId;
-
+    protected final AutofillManager mAutofillManager;
     private final ArrayList<Line> mVirtualViewGroups = new ArrayList<>();
     private final SparseArray<Item> mVirtualViews = new SparseArray<>();
-    private final AutofillManager mAutofillManager;
-
-    private Line mFocusedLine;
+    private final SparseArray<Partition> mPartitionsByAutofillId = new SparseArray<>();
+    private final ArrayMap<String, Partition> mPartitionsByName = new ArrayMap<>();
+    protected Line mFocusedLine;
+    protected int mTopMargin;
+    protected int mLeftMargin;
     private Paint mTextPaint;
+    private int mTextHeight;
+    private int mLineLength;
+
+    public CustomVirtualView(Context context) {
+        this(context, null);
+    }
 
     public CustomVirtualView(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        this(context, attrs, 0);
+    }
+
+    public CustomVirtualView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        this(context, attrs, defStyleAttr, 0);
+    }
+
+    public CustomVirtualView(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
+            int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
         mAutofillManager = context.getSystemService(AutofillManager.class);
         mTextPaint = new Paint();
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.CustomVirtualView,
+                defStyleAttr, defStyleRes);
+        int defaultHeight =
+                (int) (DEFAULT_TEXT_HEIGHT_DP * getResources().getDisplayMetrics().density);
+        mTextHeight = typedArray.getDimensionPixelSize(
+                R.styleable.CustomVirtualView_internalTextSize, defaultHeight);
+        typedArray.recycle();
+        resetCoordinates();
+    }
+
+    protected void resetCoordinates() {
         mTextPaint.setStyle(Style.FILL);
-        mTextPaint.setTextSize(TEXT_HEIGHT);
+        mTextPaint.setTextSize(mTextHeight);
+        mTopMargin = getPaddingTop();
+        mLeftMargin = getPaddingStart();
+        mLineLength = mTextHeight + VERTICAL_GAP;
     }
 
     @Override
     public void autofill(SparseArray<AutofillValue> values) {
+        Context context = getContext();
+
         // User has just selected a Dataset from the list of autofill suggestions.
         // The Dataset is comprised of a list of AutofillValues, with each AutofillValue meant
         // to fill a specific autofillable view. Now we have to update the UI based on the
-        // AutofillValues in the list.
+        // AutofillValues in the list, but first we make sure all autofilled values belong to the
+        // same partition
         if (DEBUG) Log.d(TAG, "autofill(): " + values);
+
+        // First get the name of all partitions in the values
+        ArraySet<String> partitions = new ArraySet<>();
+        for (int i = 0; i < values.size(); i++) {
+            int id = values.keyAt(i);
+            Partition partition = mPartitionsByAutofillId.get(id);
+            if (partition == null) {
+                showError(context.getString(R.string.message_autofill_no_partitions, id,
+                        mPartitionsByAutofillId));
+                return;
+            }
+            partitions.add(partition.mName);
+        }
+
+        // Then make sure they follow the Highlander rule (There can be only one)
+        if (partitions.size() != 1) {
+            showError(context.getString(R.string.message_autofill_blocked, partitions));
+            return;
+        }
+
+        // Finally, autofill it.
+        DateFormat df = android.text.format.DateFormat.getDateFormat(context);
         for (int i = 0; i < values.size(); i++) {
             int id = values.keyAt(i);
             AutofillValue value = values.valueAt(i);
             Item item = mVirtualViews.get(id);
-            if (item != null && item.editable) {
-                // Set the item's text to the text wrapped in the AutofillValue.
-                item.text = value.getTextValue();
-            } else if (item == null) {
+
+            if (item == null) {
                 Log.w(TAG, "No item for id " + id);
+                continue;
+            }
+
+            if (!item.editable) {
+                showError(context.getString(R.string.message_autofill_readonly, item.text));
+                continue;
+            }
+
+            // Check if the type was properly set by the autofill service
+            if (DEBUG) {
+                Log.d(TAG, "Validating " + i
+                        + ": expectedType=" + CommonUtil.getTypeAsString(item.type)
+                        + "(" + item.type + "), value=" + value);
+            }
+            boolean valid = false;
+            if (value.isText() && item.type == AUTOFILL_TYPE_TEXT) {
+                item.text = value.getTextValue();
+                valid = true;
+            } else if (value.isDate() && item.type == AUTOFILL_TYPE_DATE) {
+                item.text = df.format(new Date(value.getDateValue()));
+                valid = true;
             } else {
-                Log.w(TAG, "Item for id " + id + " is not editable: " + item);
+                Log.w(TAG, "Unsupported type: " + value);
+            }
+            if (!valid) {
+                item.text = context.getString(R.string.message_autofill_invalid);
             }
         }
         postInvalidate();
+        showMessage(context.getString(R.string.message_autofill_ok, partitions.valueAt(0)));
     }
 
     @Override
@@ -114,13 +200,16 @@ public class CustomVirtualView extends View {
             child.setAutofillId(structure.getAutofillId(), item.id);
             child.setAutofillHints(item.hints);
             child.setAutofillType(item.type);
+            child.setAutofillValue(item.getAutofillValue());
             child.setDataIsSensitive(!item.sanitized);
-            if (TextUtils.getTrimmedLength(item.text) > 0) {
-                child.setAutofillValue(AutofillValue.forText(item.text));
-            }
             child.setFocused(item.focused);
-            child.setId(item.id, getContext().getPackageName(), null, item.line.mIdEntry);
+            child.setVisibility(View.VISIBLE);
+            child.setDimens(item.line.mBounds.left, item.line.mBounds.top, 0, 0,
+                    item.line.mBounds.width(), item.line.mBounds.height());
+            child.setId(item.id, getContext().getPackageName(), null, item.idEntry);
             child.setClassName(item.getClassName());
+            child.setDimens(item.line.mBounds.left, item.line.mBounds.top, 0, 0,
+                    item.line.mBounds.width(), item.line.mBounds.height());
             index++;
         }
     }
@@ -133,10 +222,10 @@ public class CustomVirtualView extends View {
             Log.v(TAG, "onDraw(): " + mVirtualViewGroups.size() + " lines; canvas:" + canvas);
         }
         float x;
-        float y = TOP_MARGIN + LINE_HEIGHT;
+        float y = mTopMargin + mLineLength;
         for (int i = 0; i < mVirtualViewGroups.size(); i++) {
-            x = LEFT_MARGIN;
             Line line = mVirtualViewGroups.get(i);
+            x = mLeftMargin;
             if (VERBOSE) Log.v(TAG, "Drawing '" + line + "' at " + x + "x" + y);
             mTextPaint.setColor(line.mFieldTextItem.focused ? FOCUSED_COLOR : UNFOCUSED_COLOR);
             String readOnlyText = line.mLabelItem.text + ":  [";
@@ -146,23 +235,35 @@ public class CustomVirtualView extends View {
             // ...then paints the edit text and sets the proper boundary
             float deltaX = mTextPaint.measureText(readOnlyText);
             x += deltaX;
-            line.mBounds.set((int) x, (int) (y - LINE_HEIGHT),
+            line.mBounds.set((int) x, (int) (y - mLineLength),
                     (int) (x + mTextPaint.measureText(writeText)), (int) y);
             if (VERBOSE) Log.v(TAG, "setBounds(" + x + ", " + y + "): " + line.mBounds);
             canvas.drawText(writeText, x, y, mTextPaint);
-            y += LINE_HEIGHT;
+            y += mLineLength;
         }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int y = (int) event.getY();
-        if (DEBUG) Log.d(TAG, "Touched: y=" + y + ", range=" + LINE_HEIGHT + ", top=" + TOP_MARGIN);
-        int lowerY = TOP_MARGIN;
+        onMotion(y);
+        return super.onTouchEvent(event);
+    }
+
+    /**
+     * Handles a motion event.
+     *
+     * @param y y coordinate.
+     */
+    protected void onMotion(int y) {
+        if (DEBUG) {
+            Log.d(TAG, "onMotion(): y=" + y + ", range=" + mLineLength + ", top=" + mTopMargin);
+        }
+        int lowerY = mTopMargin;
         int upperY = -1;
         for (int i = 0; i < mVirtualViewGroups.size(); i++) {
-            upperY = lowerY + LINE_HEIGHT;
             Line line = mVirtualViewGroups.get(i);
+            upperY = lowerY + mLineLength;
             if (DEBUG) Log.d(TAG, "Line " + i + " ranges from " + lowerY + " to " + upperY);
             if (lowerY <= y && y <= upperY) {
                 if (mFocusedLine != null) {
@@ -175,45 +276,59 @@ public class CustomVirtualView extends View {
                 invalidate();
                 break;
             }
-            lowerY += LINE_HEIGHT;
+            lowerY += mLineLength;
         }
-        return super.onTouchEvent(event);
     }
 
     /**
-     * Adds a new line (containining a label and an input field) to the view.
+     * Creates a new partition with the given name.
      *
-     * @param idEntry id used to identify the line.
-     * @param label text used in the label.
-     * @param text initial text used in the input field.
-     * @param sensitive whether the input is considered sensitive.
-     * @param hints list of autofill hints.
-     *
-     * @return the new line.
+     * @throws IllegalArgumentException if such partition already exists.
      */
-    public Line addLine(String idEntry, String label, String text, boolean sensitive,
-            String... hints) {
-        Line line = new Line(idEntry, label, hints, text, !sensitive);
-        mVirtualViewGroups.add(line);
-        mVirtualViews.put(line.mLabelItem.id, line.mLabelItem);
-        mVirtualViews.put(line.mFieldTextItem.id, line.mFieldTextItem);
-        return line;
+    public Partition addPartition(String name) {
+        Preconditions.checkNotNull(name, "Name cannot be null.");
+        Preconditions.checkArgument(mPartitionsByName.containsKey(name),
+                "Partition with such name already exists.");
+        Partition partition = new Partition(name);
+        mPartitionsByName.put(name, partition);
+        return partition;
     }
 
-    private static final class Item {
+    private void showError(String message) {
+        showMessage(true, message);
+    }
+
+    private void showMessage(String message) {
+        showMessage(false, message);
+    }
+
+    private void showMessage(boolean warning, String message) {
+        if (warning) {
+            Log.w(TAG, message);
+        } else {
+            Log.i(TAG, message);
+        }
+        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+    }
+
+
+    protected static final class Item {
+        protected final int id;
+        private final String idEntry;
         private final Line line;
-        private final int id;
         private final boolean editable;
         private final boolean sanitized;
         private final String[] hints;
         private final int type;
         private CharSequence text;
         private boolean focused = false;
+        private long date;
 
-        Item(Line line, int id, String[] hints, int type, CharSequence text, boolean editable,
-                boolean sanitized) {
+        Item(Line line, int id, String idEntry, String[] hints, int type, CharSequence text,
+                boolean editable,boolean sanitized) {
             this.line = line;
             this.id = id;
+            this.idEntry = idEntry;
             this.text = text;
             this.editable = editable;
             this.sanitized = sanitized;
@@ -223,12 +338,86 @@ public class CustomVirtualView extends View {
 
         @Override
         public String toString() {
-            return id + ": " + text + (editable ? " (editable)" : " (read-only)"
-                    + (sanitized ? " (sanitized)" : " (sensitive"));
+            return id + "/" + idEntry + ": "
+                    + (type == AUTOFILL_TYPE_DATE ? date : text) // TODO: use DateFormater for date
+                    + " (" + CommonUtil.getTypeAsString(type) + ")"
+                    + (editable ? " (editable)" : " (read-only)"
+                    + (sanitized ? " (sanitized)" : " (sensitive"))
+                    + (hints == null ? " (no hints)" : " ( " + Arrays.toString(hints) + ")");
         }
 
         public String getClassName() {
             return editable ? EditText.class.getName() : TextView.class.getName();
+        }
+
+        public AutofillValue getAutofillValue() {
+            switch (type) {
+                case AUTOFILL_TYPE_TEXT:
+                    return (TextUtils.getTrimmedLength(text) > 0)
+                            ? AutofillValue.forText(text)
+                            : null;
+                case AUTOFILL_TYPE_DATE:
+                    return AutofillValue.forDate(date);
+                default:
+                    return null;
+            }
+        }
+    }
+
+    /**
+     * A partition represents a logical group of items, such as credit card info.
+     */
+    public final class Partition {
+        private final String mName;
+        private final SparseArray<Line> mLines = new SparseArray<>();
+
+        private Partition(String name) {
+            mName = name;
+        }
+
+        /**
+         * Adds a new line (containining a label and an input field) to the view.
+         *
+         * @param idEntryPrefix id prefix used to identify the line - label node will be suffixed
+         * with {@code Label} and editable node with {@code Field}.
+         * @param autofillType  {@link View#getAutofillType() autofill type} of the field.
+         * @param label         text used in the label.
+         * @param text          initial text used in the input field.
+         * @param sensitive     whether the input is considered sensitive.
+         * @param autofillHints list of autofill hints.
+         * @return the new line.
+         */
+        public Line addLine(String idEntryPrefix, int autofillType, String label, String text,
+                boolean sensitive, String... autofillHints) {
+            // TODO: use PreConditions
+            if (autofillType != AUTOFILL_TYPE_TEXT && autofillType != AUTOFILL_TYPE_DATE) {
+                throw new IllegalArgumentException("unsupported type: " + autofillType);
+            }
+
+            Line line = new Line(idEntryPrefix, autofillType, label, autofillHints, text,
+                    !sensitive);
+            mVirtualViewGroups.add(line);
+            int id = line.mFieldTextItem.id;
+            mLines.put(id, line);
+            mVirtualViews.put(line.mLabelItem.id, line.mLabelItem);
+            mVirtualViews.put(id, line.mFieldTextItem);
+            mPartitionsByAutofillId.put(id, this);
+
+            return line;
+        }
+
+        /**
+         * Resets the value of all items in the partition.
+         */
+        public void reset() {
+            for (int i = 0; i < mLines.size(); i++) {
+                mLines.valueAt(i).reset();
+            }
+        }
+
+        @Override
+        public String toString() {
+            return mName;
         }
     }
 
@@ -237,18 +426,19 @@ public class CustomVirtualView extends View {
      */
     public final class Line {
 
+        protected final Item mFieldTextItem;
         // Boundaries of the text field, relative to the CustomView
         private final Rect mBounds = new Rect();
         private final Item mLabelItem;
-        private final Item mFieldTextItem;
-        private final String mIdEntry;
+        private final int mAutofillType;
 
-        private Line(String idEntry, String label, String[] hints, String text, boolean sanitized) {
-            this.mIdEntry = idEntry;
-            this.mLabelItem = new Item(this, ++sNextId, null, AUTOFILL_TYPE_NONE, label,
-                    false, true);
-            this.mFieldTextItem = new Item(this, ++sNextId, hints, AUTOFILL_TYPE_TEXT, text,
-                    true, sanitized);
+        private Line(String idEntryPrefix, int autofillType, String label, String[] hints,
+                String text, boolean sanitized) {
+            this.mAutofillType = autofillType;
+            this.mLabelItem = new Item(this, ++sNextId, idEntryPrefix + "Label", null,
+                    AUTOFILL_TYPE_NONE, label, false, true);
+            this.mFieldTextItem = new Item(this, ++sNextId, idEntryPrefix + "Field", hints,
+                    autofillType, text, true, sanitized);
         }
 
         private void changeFocus(boolean focused) {
@@ -297,7 +487,7 @@ public class CustomVirtualView extends View {
         @Override
         public String toString() {
             return "Label: " + mLabelItem + " Text: " + mFieldTextItem + " Focused: " +
-                    mFieldTextItem.focused;
+                    mFieldTextItem.focused + " Type: " + mAutofillType;
         }
     }
 }

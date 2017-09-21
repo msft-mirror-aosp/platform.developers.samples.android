@@ -19,6 +19,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.autofill.AutofillManager;
@@ -32,7 +33,13 @@ import com.example.android.autofillframework.R;
 
 import java.util.Calendar;
 
-public class CreditCardExpirationDateView extends FrameLayout {
+import static com.example.android.autofillframework.CommonUtil.TAG;
+
+/**
+ * A custom view that represents a {@link View#AUTOFILL_HINT_CREDIT_CARD_EXPIRATION_DATE} using
+ * 2 {@link Spinner spinners} to represent the credit card expiration month and year.
+ */
+public class CreditCardExpirationDateCompoundView extends FrameLayout {
 
     private static final int CC_EXP_YEARS_COUNT = 5;
 
@@ -41,20 +48,21 @@ public class CreditCardExpirationDateView extends FrameLayout {
     private Spinner mCcExpMonthSpinner;
     private Spinner mCcExpYearSpinner;
 
-    public CreditCardExpirationDateView(@NonNull Context context) {
+    public CreditCardExpirationDateCompoundView(@NonNull Context context) {
         this(context, null);
     }
 
-    public CreditCardExpirationDateView(@NonNull Context context, @Nullable AttributeSet attrs) {
+    public CreditCardExpirationDateCompoundView(@NonNull Context context,
+            @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public CreditCardExpirationDateView(@NonNull Context context, @Nullable AttributeSet attrs,
-            int defStyleAttr) {
+    public CreditCardExpirationDateCompoundView(@NonNull Context context,
+            @Nullable AttributeSet attrs, int defStyleAttr) {
         this(context, attrs, defStyleAttr, 0);
     }
 
-    public CreditCardExpirationDateView(@NonNull final Context context,
+    public CreditCardExpirationDateCompoundView(@NonNull final Context context,
             @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         View rootView = LayoutInflater.from(context).inflate(R.layout.cc_exp_date, this);
@@ -73,16 +81,16 @@ public class CreditCardExpirationDateView extends FrameLayout {
                 android.R.layout.simple_spinner_item, mYears));
         AdapterView.OnItemSelectedListener onItemSelectedListener =
                 new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                context.getSystemService(AutofillManager.class)
-                        .notifyValueChanged(CreditCardExpirationDateView.this);
-            }
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        context.getSystemService(AutofillManager.class)
+                                .notifyValueChanged(CreditCardExpirationDateCompoundView.this);
+                    }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        };
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+                    }
+                };
         mCcExpMonthSpinner.setOnItemSelectedListener(onItemSelectedListener);
         mCcExpYearSpinner.setOnItemSelectedListener(onItemSelectedListener);
     }
@@ -104,6 +112,7 @@ public class CreditCardExpirationDateView extends FrameLayout {
     @Override
     public void autofill(AutofillValue value) {
         if (!value.isDate()) {
+            Log.w(TAG, "Ignoring autofill() because service sent a non-date value:" + value);
             return;
         }
         Calendar calendar = Calendar.getInstance();
