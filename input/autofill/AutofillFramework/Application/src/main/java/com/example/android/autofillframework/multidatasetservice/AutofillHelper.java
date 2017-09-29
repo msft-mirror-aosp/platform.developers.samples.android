@@ -38,6 +38,10 @@ import static com.example.android.autofillframework.CommonUtil.TAG;
  */
 public final class AutofillHelper {
 
+    private AutofillHelper() {
+        throw new UnsupportedOperationException("provide static methods only");
+    }
+
     /**
      * Wraps autofill data in a LoginCredential  Dataset object which can then be sent back to the
      * client View.
@@ -109,23 +113,5 @@ public final class AutofillHelper {
             Log.d(TAG, "These fields are not meant to be saved by autofill.");
             return null;
         }
-    }
-
-    public static String[] filterForSupportedHints(String[] hints) {
-        String[] filteredHints = new String[hints.length];
-        int i = 0;
-        for (String hint : hints) {
-            if (AutofillHints.isValidHint(hint)) {
-                filteredHints[i++] = hint;
-            } else {
-                Log.d(TAG, "Invalid autofill hint: " + hint);
-            }
-        }
-        if (i == 0) {
-            return null;
-        }
-        String[] finalFilteredHints = new String[i];
-        System.arraycopy(filteredHints, 0, finalFilteredHints, 0, i);
-        return finalFilteredHints;
     }
 }
