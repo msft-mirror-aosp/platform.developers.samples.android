@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.android.autofill.app;
+package com.example.android.autofill.app.view.autofillable;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -38,6 +38,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.android.autofill.app.R;
+import com.example.android.autofill.app.Util;
 import com.google.common.base.Preconditions;
 
 import java.text.DateFormat;
@@ -45,7 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 
-import static com.example.android.autofill.app.CommonUtil.bundleToString;
+import static com.example.android.autofill.app.Util.bundleToString;
 
 /**
  * A custom View with a virtual structure for fields supporting {@link View#getAutofillHints()}
@@ -58,7 +60,7 @@ public class CustomVirtualView extends View {
     /**
      * When set, it notifies AutofillManager of focus change as the view scrolls, so the
      * autofill UI is continually drawn.
-     *
+     * <p>
      * <p>This is janky and incompatible with the way the autofill UI works on native views, but
      * it's a cool experiment!
      */
@@ -167,7 +169,7 @@ public class CustomVirtualView extends View {
             // Check if the type was properly set by the autofill service
             if (DEBUG) {
                 Log.d(TAG, "Validating " + i
-                        + ": expectedType=" + CommonUtil.getTypeAsString(item.type)
+                        + ": expectedType=" + Util.getAutofillTypeAsString(item.type)
                         + "(" + item.type + "), value=" + value);
             }
             boolean valid = false;
@@ -352,7 +354,7 @@ public class CustomVirtualView extends View {
         public String toString() {
             return id + "/" + idEntry + ": "
                     + (type == AUTOFILL_TYPE_DATE ? date : text) // TODO: use DateFormat for date
-                    + " (" + CommonUtil.getTypeAsString(type) + ")"
+                    + " (" + Util.getAutofillTypeAsString(type) + ")"
                     + (editable ? " (editable)" : " (read-only)"
                     + (sanitized ? " (sanitized)" : " (sensitive"))
                     + (hints == null ? " (no hints)" : " ( " + Arrays.toString(hints) + ")");

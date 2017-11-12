@@ -27,7 +27,7 @@ import android.view.autofill.AutofillValue;
 import java.util.Arrays;
 import java.util.Set;
 
-public final class CommonUtil {
+public final class Util {
 
     public static final String TAG = "AutofillSample";
     public static final boolean DEBUG = true;
@@ -60,7 +60,7 @@ public final class CommonUtil {
         return builder.toString();
     }
 
-    public static String getTypeAsString(int type) {
+    public static String getAutofillTypeAsString(int type) {
         switch (type) {
             case View.AUTOFILL_TYPE_TEXT:
                 return "TYPE_TEXT";
@@ -131,7 +131,7 @@ public final class CommonUtil {
 
         String[] afHints = node.getAutofillHints();
         CharSequence[] options = node.getAutofillOptions();
-        builder.append(prefix).append("afType: ").append(getTypeAsString(node.getAutofillType()))
+        builder.append(prefix).append("afType: ").append(getAutofillTypeAsString(node.getAutofillType()))
                 .append("\tafValue:")
                 .append(getAutofillValueAndTypeAsString(node.getAutofillValue()))
                 .append("\tafOptions:").append(options == null ? "N/A" : Arrays.toString(options))

@@ -1,4 +1,4 @@
-<!--
+/*
  * Copyright (C) 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
--->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:alpha="0.50"
-    android:viewportHeight="24.0"
-    android:viewportWidth="24.0">
-    <path
-        android:fillColor="#FF000000"
-        android:pathData="M12,12c2.21,0 4,-1.79 4,-4s-1.79,-4 -4,-4 -4,1.79 -4,4 1.79,4 4,4zM12,14c-2.67,0 -8,1.34 -8,4v2h16v-2c0,-2.66 -5.33,-4 -8,-4z" />
-</vector>
+*/
+
+package com.example.android.autofill.app;
+
+import android.support.annotation.StringRes;
+import android.support.v4.app.Fragment;
+
+public abstract class BaseMainFragment extends Fragment {
+    public abstract @StringRes int getPageTitleResId();
+}

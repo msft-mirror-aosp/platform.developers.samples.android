@@ -26,7 +26,7 @@ import android.service.autofill.FillRequest;
 import android.service.autofill.FillResponse;
 import android.service.autofill.SaveCallback;
 import android.service.autofill.SaveRequest;
-import android.util.Log;
+import android.view.View;
 import android.view.autofill.AutofillId;
 import android.widget.RemoteViews;
 
@@ -39,12 +39,22 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.example.android.autofill.service.CommonUtil.TAG;
-import static com.example.android.autofill.service.CommonUtil.VERBOSE;
-import static com.example.android.autofill.service.CommonUtil.bundleToString;
-import static com.example.android.autofill.service.CommonUtil.dumpStructure;
+import static com.example.android.autofill.service.AutofillHelper.CLIENT_STATE_PARTIAL_ID_TEMPLATE;
+import static com.example.android.autofill.service.Util.AUTOFILL_ID_FILTER;
+import static com.example.android.autofill.service.Util.bundleToString;
+import static com.example.android.autofill.service.Util.dumpStructure;
+import static com.example.android.autofill.service.Util.findNodeByFilter;
+import static com.example.android.autofill.service.Util.logVerboseEnabled;
+import static com.example.android.autofill.service.Util.logd;
+import static com.example.android.autofill.service.Util.logv;
+import static com.example.android.autofill.service.Util.logw;
 
 public class MyAutofillService extends AutofillService {
+
+    @Override public void onCreate() {
+        super.onCreate();
+        Util.setLoggingLevel(MyPreferences.getInstance(this).getLoggingLevel());
+    }
 
     @Override
     public void onFillRequest(FillRequest request, CancellationSignal cancellationSignal,
@@ -58,18 +68,15 @@ public class MyAutofillService extends AutofillService {
                     getApplicationContext().getString(R.string.invalid_package_signature));
             return;
         }
-        final Bundle data = request.getClientState();
-        if (VERBOSE) {
-            Log.v(TAG, "onFillRequest(): data=" + bundleToString(data));
-            dumpStructure(structure);
+        final Bundle clientState = request.getClientState();
+        if (logVerboseEnabled()) {
+            logv("onFillRequest(): clientState=%s", bundleToString(clientState));
         }
+        dumpStructure(structure);
 
-        cancellationSignal.setOnCancelListener(new CancellationSignal.OnCancelListener() {
-            @Override
-            public void onCancel() {
-                Log.w(TAG, "Cancel autofill not implemented in this sample.");
-            }
-        });
+        cancellationSignal.setOnCancelListener(() ->
+                logw("Cancel autofill not implemented in this sample.")
+        );
         // Parse AutoFill data in Activity
         StructureParser parser = new StructureParser(getApplicationContext(), structure);
         // TODO: try / catch on other places (onSave, auth activity, etc...)
@@ -78,7 +85,7 @@ public class MyAutofillService extends AutofillService {
         } catch (SecurityException e) {
             // TODO: handle cases where DAL didn't pass by showing a custom UI asking the user
             // to confirm the mapping. Might require subclassing SecurityException.
-            Log.w(TAG, "Security exception handling " + request, e);
+            logw(e, "Security exception handling %s", request);
             callback.onFailure(e.getMessage());
             return;
         }
@@ -103,27 +110,64 @@ public class MyAutofillService extends AutofillService {
                     SharedPrefsAutofillRepository.getInstance().getFilledAutofillFieldCollection(
                             this, autofillFields.getFocusedHints(), autofillFields.getAllHints());
             FillResponse response = AutofillHelper.newResponse
-                    (this, datasetAuth, autofillFields, clientFormDataMap);
+                    (this, clientState, datasetAuth, autofillFields, clientFormDataMap);
             callback.onSuccess(response);
         }
     }
 
     @Override
     public void onSaveRequest(SaveRequest request, SaveCallback callback) {
-        List<FillContext> context = request.getFillContexts();
-        final AssistStructure structure = context.get(context.size() - 1).getStructure();
+        List<FillContext> fillContexts = request.getFillContexts();
+        int size = fillContexts.size();
+        AssistStructure structure = fillContexts.get(size - 1).getStructure();
         String packageName = structure.getActivityComponent().getPackageName();
         if (!SharedPrefsPackageVerificationRepository.getInstance()
                 .putPackageSignatures(getApplicationContext(), packageName)) {
-            callback.onFailure(
-                    getApplicationContext().getString(R.string.invalid_package_signature));
+            callback.onFailure(getApplicationContext().getString(R.string.invalid_package_signature));
             return;
         }
-        final Bundle data = request.getClientState();
-        if (VERBOSE) {
-            Log.v(TAG, "onSaveRequest(): data=" + bundleToString(data));
-            dumpStructure(structure);
+        Bundle clientState = request.getClientState();
+        if (logVerboseEnabled()) {
+            logv("onSaveRequest(): clientState=%s", bundleToString(clientState));
         }
+        dumpStructure(structure);
+
+        // TODO: hardcode check for partial username
+        if (clientState != null) {
+            String usernameKey =
+                    String.format(CLIENT_STATE_PARTIAL_ID_TEMPLATE, View.AUTOFILL_HINT_USERNAME);
+            AutofillId usernameId = clientState.getParcelable(usernameKey);
+            logd("client state for %s: %s", usernameKey, usernameId);
+            if (usernameId != null) {
+                String passwordKey =
+                        String.format(CLIENT_STATE_PARTIAL_ID_TEMPLATE, View.AUTOFILL_HINT_PASSWORD);
+                AutofillId passwordId = clientState.getParcelable(passwordKey);
+
+                logd("Scanning %d contexts for username ID %s and password ID %s.", size,
+                        usernameId, passwordId);
+                AssistStructure.ViewNode usernameNode =
+                        findNodeByFilter(fillContexts, usernameId, AUTOFILL_ID_FILTER);
+                AssistStructure.ViewNode passwordNode =
+                        findNodeByFilter(fillContexts, passwordId, AUTOFILL_ID_FILTER);
+                String username = null, password = null;
+                if (usernameNode != null) {
+                    username = usernameNode.getAutofillValue().getTextValue().toString();
+                }
+                if (passwordNode != null) {
+                    password = passwordNode.getAutofillValue().getTextValue().toString();
+                }
+
+                if (username != null && password != null) {
+                    logd("user: %s, pass: %s", username, password);
+                    // TODO: save it
+                    callback.onFailure("TODO: save " + username + "/" + password);
+                    return;
+                } else {
+                    logw(" missing user (%s) or pass (%s)", username, password);
+                }
+            }
+        }
+
         StructureParser parser = new StructureParser(getApplicationContext(), structure);
         parser.parseForSave();
         FilledAutofillFieldCollection filledAutofillFieldCollection = parser.getClientFormData();
@@ -133,11 +177,11 @@ public class MyAutofillService extends AutofillService {
 
     @Override
     public void onConnected() {
-        Log.d(TAG, "onConnected");
+        logd("onConnected");
     }
 
     @Override
     public void onDisconnected() {
-        Log.d(TAG, "onDisconnected");
+        logd("onDisconnected");
     }
 }
