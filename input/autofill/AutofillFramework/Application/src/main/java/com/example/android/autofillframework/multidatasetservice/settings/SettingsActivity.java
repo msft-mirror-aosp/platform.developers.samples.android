@@ -30,7 +30,6 @@ import android.widget.TextView;
 
 import com.example.android.autofillframework.R;
 import com.example.android.autofillframework.multidatasetservice.datasource.SharedPrefsAutofillRepository;
-import com.example.android.autofillframework.multidatasetservice.datasource.SharedPrefsPackageVerificationRepository;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -91,10 +90,10 @@ public class SettingsActivity extends AppCompatActivity {
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        SharedPrefsAutofillRepository.getInstance().clear(SettingsActivity.this);
-                        SharedPrefsPackageVerificationRepository.getInstance()
-                                .clear(SettingsActivity.this);
-                        MyPreferences.getInstance(SettingsActivity.this).clearCredentials();
+                        SharedPrefsAutofillRepository.getInstance
+                                (SettingsActivity.this).clear();
+                        MyPreferences.getInstance(SettingsActivity.this)
+                                .clearCredentials();
                         dialog.dismiss();
                     }
                 })
@@ -150,7 +149,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void setupSettingsSwitch(int containerId, int labelId, int switchId, boolean checked,
             CompoundButton.OnCheckedChangeListener checkedChangeListener) {
-        ViewGroup container = findViewById(containerId);
+        ViewGroup container = (ViewGroup) findViewById(containerId);
         String switchLabel = ((TextView) container.findViewById(labelId)).getText().toString();
         final Switch switchView = container.findViewById(switchId);
         switchView.setContentDescription(switchLabel);
@@ -166,11 +165,10 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void setupSettingsButton(int containerId, int labelId, int imageViewId,
             final View.OnClickListener onClickListener) {
-        ViewGroup container = findViewById(containerId);
-        TextView buttonLabel = container.findViewById(labelId);
-        String buttonLabelText = buttonLabel.getText().toString();
-        ImageView imageView = container.findViewById(imageViewId);
-        imageView.setContentDescription(buttonLabelText);
+        ViewGroup container = (ViewGroup) findViewById(containerId);
+        String buttonLabel = ((TextView) container.findViewById(labelId)).getText().toString();
+        final ImageView imageView = container.findViewById(imageViewId);
+        imageView.setContentDescription(buttonLabel);
         container.setOnClickListener(onClickListener);
     }
 }

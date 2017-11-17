@@ -16,11 +16,11 @@
 package com.example.android.autofillframework.multidatasetservice.datasource;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.ArraySet;
 
 import com.example.android.autofillframework.multidatasetservice.model.FilledAutofillFieldCollection;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,33 +31,35 @@ import java.util.Set;
  * Disclaimer: you should not store sensitive fields like user data unencrypted. This is done
  * here only for simplicity and learning purposes.
  */
-public class SharedPrefsAutofillRepository implements AutofillDataSource {
-    private static final String SHARED_PREF_KEY = "com.example.android.autofillframework"
-            + ".multidatasetservice.datasource.AutofillDataSource";
+public class SharedPrefsAutofillRepository implements AutofillRepository {
+    private static final String SHARED_PREF_KEY = "com.example.android.autofillframework.service";
     private static final String CLIENT_FORM_DATA_KEY = "loginCredentialDatasets";
     private static final String DATASET_NUMBER_KEY = "datasetNumber";
+
     private static SharedPrefsAutofillRepository sInstance;
 
-    private SharedPrefsAutofillRepository() {
+    private final SharedPreferences mPrefs;
+
+    private SharedPrefsAutofillRepository(Context context) {
+        mPrefs = context.getApplicationContext()
+                .getSharedPreferences(SHARED_PREF_KEY, Context.MODE_PRIVATE);
     }
 
-    public static SharedPrefsAutofillRepository getInstance() {
+    public static SharedPrefsAutofillRepository getInstance(Context context) {
         if (sInstance == null) {
-            sInstance = new SharedPrefsAutofillRepository();
+            sInstance = new SharedPrefsAutofillRepository(context);
         }
         return sInstance;
     }
 
     @Override
-    public HashMap<String, FilledAutofillFieldCollection> getFilledAutofillFieldCollection(
-            Context context, List<String> focusedAutofillHints, List<String> allAutofillHints) {
+    public HashMap<String, FilledAutofillFieldCollection> getClientFormData(List<String> focusedAutofillHints,
+            List<String> allAutofillHints) {
         boolean hasDataForFocusedAutofillHints = false;
         HashMap<String, FilledAutofillFieldCollection> clientFormDataMap = new HashMap<>();
-        Set<String> clientFormDataStringSet = getAllAutofillDataStringSet(context);
+        Set<String> clientFormDataStringSet = getAllAutofillDataStringSet();
         for (String clientFormDataString : clientFormDataStringSet) {
-            Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
-            FilledAutofillFieldCollection filledAutofillFieldCollection =
-                    gson.fromJson(clientFormDataString, FilledAutofillFieldCollection.class);
+            FilledAutofillFieldCollection filledAutofillFieldCollection = new Gson().fromJson(clientFormDataString, FilledAutofillFieldCollection.class);
             if (filledAutofillFieldCollection != null) {
                 if (filledAutofillFieldCollection.helpsWithHints(focusedAutofillHints)) {
                     // Saved data has data relevant to at least 1 of the hints associated with the
@@ -67,8 +69,7 @@ public class SharedPrefsAutofillRepository implements AutofillDataSource {
                 if (filledAutofillFieldCollection.helpsWithHints(allAutofillHints)) {
                     // Saved data has data relevant to at least 1 of these hints associated with any
                     // of the Views in the hierarchy.
-                    clientFormDataMap.put(filledAutofillFieldCollection.getDatasetName(),
-                            filledAutofillFieldCollection);
+                    clientFormDataMap.put(filledAutofillFieldCollection.getDatasetName(), filledAutofillFieldCollection);
                 }
             }
         }
@@ -80,61 +81,41 @@ public class SharedPrefsAutofillRepository implements AutofillDataSource {
     }
 
     @Override
-    public void saveFilledAutofillFieldCollection(Context context,
-            FilledAutofillFieldCollection filledAutofillFieldCollection) {
-        String datasetName = "dataset-" + getDatasetNumber(context);
+    public void saveClientFormData(FilledAutofillFieldCollection filledAutofillFieldCollection) {
+        String datasetName = "dataset-" + getDatasetNumber();
         filledAutofillFieldCollection.setDatasetName(datasetName);
-        Set<String> allAutofillData = getAllAutofillDataStringSet(context);
-        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
-        allAutofillData.add(gson.toJson(filledAutofillFieldCollection));
-        saveAllAutofillDataStringSet(context, allAutofillData);
-        incrementDatasetNumber(context);
+        Set<String> allAutofillData = getAllAutofillDataStringSet();
+        allAutofillData.add(new Gson().toJson(filledAutofillFieldCollection));
+        saveAllAutofillDataStringSet(allAutofillData);
+        incrementDatasetNumber();
     }
 
     @Override
-    public void clear(Context context) {
-        context.getApplicationContext()
-                .getSharedPreferences(SHARED_PREF_KEY, Context.MODE_PRIVATE)
-                .edit()
-                .remove(CLIENT_FORM_DATA_KEY)
-                .remove(DATASET_NUMBER_KEY)
-                .apply();
+    public void clear() {
+        mPrefs.edit().remove(CLIENT_FORM_DATA_KEY).apply();
     }
 
-    private Set<String> getAllAutofillDataStringSet(Context context) {
-        return context.getApplicationContext()
-                .getSharedPreferences(SHARED_PREF_KEY, Context.MODE_PRIVATE)
-                .getStringSet(CLIENT_FORM_DATA_KEY, new ArraySet<String>());
+    private Set<String> getAllAutofillDataStringSet() {
+        return mPrefs.getStringSet(CLIENT_FORM_DATA_KEY, new ArraySet<String>());
     }
 
-    private void saveAllAutofillDataStringSet(Context context,
-            Set<String> allAutofillDataStringSet) {
-        context.getApplicationContext()
-                .getSharedPreferences(SHARED_PREF_KEY, Context.MODE_PRIVATE)
-                .edit()
-                .putStringSet(CLIENT_FORM_DATA_KEY, allAutofillDataStringSet)
-                .apply();
+    private void saveAllAutofillDataStringSet(Set<String> allAutofillDataStringSet) {
+        mPrefs.edit().putStringSet(CLIENT_FORM_DATA_KEY, allAutofillDataStringSet).apply();
     }
 
     /**
      * For simplicity, datasets will be named in the form "dataset-X" where X means
      * this was the Xth dataset saved.
      */
-    private int getDatasetNumber(Context context) {
-        return context.getApplicationContext()
-                .getSharedPreferences(SHARED_PREF_KEY, Context.MODE_PRIVATE)
-                .getInt(DATASET_NUMBER_KEY, 0);
+    private int getDatasetNumber() {
+        return mPrefs.getInt(DATASET_NUMBER_KEY, 0);
     }
 
     /**
      * Every time a dataset is saved, this should be called to increment the dataset number.
      * (only important for this service's dataset naming scheme).
      */
-    private void incrementDatasetNumber(Context context) {
-        context.getApplicationContext()
-                .getSharedPreferences(SHARED_PREF_KEY, Context.MODE_PRIVATE)
-                .edit()
-                .putInt(DATASET_NUMBER_KEY, getDatasetNumber(context) + 1)
-                .apply();
+    private void incrementDatasetNumber() {
+        mPrefs.edit().putInt(DATASET_NUMBER_KEY, getDatasetNumber() + 1).apply();
     }
 }

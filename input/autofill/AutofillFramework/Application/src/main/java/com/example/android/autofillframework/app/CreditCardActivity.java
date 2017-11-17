@@ -20,26 +20,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.view.autofill.AutofillManager;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.Spinner;
 
 import com.example.android.autofillframework.R;
 
-import java.util.Calendar;
-
 public class CreditCardActivity extends AppCompatActivity {
-
-    private static final int CC_EXP_YEARS_COUNT = 5;
-
-    private final String[] years = new String[CC_EXP_YEARS_COUNT];
-
-    private Spinner mCcExpirationDaySpinner;
-    private Spinner mCcExpirationMonthSpinner;
-    private Spinner mCcExpirationYearSpinner;
-    private EditText mCcCardNumber;
-    private EditText mCcSecurityCode;
 
     public static Intent getStartActivityIntent(Context context) {
         Intent intent = new Intent(context, CreditCardActivity.class);
@@ -49,12 +35,12 @@ public class CreditCardActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.credit_card_activity);
-        mCcExpirationDaySpinner = findViewById(R.id.expirationDay);
-        mCcExpirationMonthSpinner = findViewById(R.id.expirationMonth);
-        mCcExpirationYearSpinner = findViewById(R.id.expirationYear);
-        mCcCardNumber = findViewById(R.id.creditCardNumberField);
-        mCcSecurityCode = findViewById(R.id.creditCardSecurityCode);
+
+        Spinner ccExpirationDaySpinner = findViewById(R.id.expirationDay);
+        Spinner ccExpirationMonthSpinner = findViewById(R.id.expirationMonth);
+        Spinner ccExpirationYearSpinner = findViewById(R.id.expirationYear);
 
         // Create an ArrayAdapter using the string array and a default spinner layout
         ArrayAdapter<CharSequence> dayAdapter = ArrayAdapter.createFromResource
@@ -62,23 +48,18 @@ public class CreditCardActivity extends AppCompatActivity {
         // Specify the layout to use when the list of choices appears
         dayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         // Apply the adapter to the spinner
-        mCcExpirationDaySpinner.setAdapter(dayAdapter);
+        ccExpirationDaySpinner.setAdapter(dayAdapter);
 
         ArrayAdapter<CharSequence> monthAdapter = ArrayAdapter.createFromResource
                 (this, R.array.month_array, android.R.layout.simple_spinner_item);
         monthAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mCcExpirationMonthSpinner.setAdapter(monthAdapter);
-        int year = Calendar.getInstance().get(Calendar.YEAR);
-        for (int i = 0; i < years.length; i++) {
-            years[i] = Integer.toString(year + i);
-        }
-        mCcExpirationYearSpinner.setAdapter(
-                new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, years) {
-                    @Override
-                    public CharSequence[] getAutofillOptions() {
-                        return years;
-                    }
-                });
+        ccExpirationMonthSpinner.setAdapter(monthAdapter);
+
+        ArrayAdapter<CharSequence> yearAdapter = ArrayAdapter.createFromResource
+                (this, R.array.year_array, android.R.layout.simple_spinner_item);
+        yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        ccExpirationYearSpinner.setAdapter(yearAdapter);
+
         findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -88,18 +69,13 @@ public class CreditCardActivity extends AppCompatActivity {
         findViewById(R.id.clear).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getSystemService(AutofillManager.class).cancel();
                 resetFields();
             }
         });
     }
 
     private void resetFields() {
-        mCcExpirationDaySpinner.setSelection(0);
-        mCcExpirationMonthSpinner.setSelection(0);
-        mCcExpirationYearSpinner.setSelection(0);
-        mCcCardNumber.setText("");
-        mCcSecurityCode.setText("");
+        //TODO
     }
 
     /**

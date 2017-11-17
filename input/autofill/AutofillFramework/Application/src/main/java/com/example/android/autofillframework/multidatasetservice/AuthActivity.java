@@ -15,6 +15,7 @@
  */
 package com.example.android.autofillframework.multidatasetservice;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.app.assist.AssistStructure;
 import android.content.Context;
@@ -24,7 +25,6 @@ import android.os.Bundle;
 import android.service.autofill.Dataset;
 import android.service.autofill.FillResponse;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.util.Log;
 import android.view.View;
@@ -50,7 +50,7 @@ import static com.example.android.autofillframework.CommonUtil.TAG;
  * It is launched when an Autofill Response or specific Dataset within the Response requires
  * authentication to access. It bundles the result in an Intent.
  */
-public class AuthActivity extends AppCompatActivity {
+public class AuthActivity extends Activity {
 
     // Unique id for dataset intents.
     private static int sDatasetPendingIntentId = 0;
@@ -130,8 +130,8 @@ public class AuthActivity extends AppCompatActivity {
         int saveTypes = autofillFields.getSaveType();
         mReplyIntent = new Intent();
         HashMap<String, FilledAutofillFieldCollection> clientFormDataMap =
-                SharedPrefsAutofillRepository.getInstance().getFilledAutofillFieldCollection
-                        (this, autofillFields.getFocusedHints(), autofillFields.getAllHints());
+                SharedPrefsAutofillRepository.getInstance(this).getClientFormData
+                        (autofillFields.getFocusedHints(), autofillFields.getAllHints());
         if (forResponse) {
             setResponseIntent(AutofillHelper.newResponse
                     (this, false, autofillFields, clientFormDataMap));
