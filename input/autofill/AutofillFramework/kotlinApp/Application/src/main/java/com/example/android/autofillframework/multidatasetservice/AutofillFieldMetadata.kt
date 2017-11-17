@@ -28,7 +28,7 @@ class AutofillFieldMetadata(view: ViewNode) {
     var saveType = 0
         private set
 
-    val autofillHints = view.autofillHints.filter(AutofillHelper::isValidHint).toTypedArray()
+    val autofillHints: Array<String> = view.autofillHints
     val autofillId: AutofillId = view.autofillId
     val autofillType: Int = view.autofillType
     val autofillOptions: Array<CharSequence>? = view.autofillOptions
@@ -42,12 +42,8 @@ class AutofillFieldMetadata(view: ViewNode) {
      * When the [ViewNode] is a list that the user needs to choose a string from (i.e. a spinner),
      * this is called to return the index of a specific item in the list.
      */
-    fun getAutofillOptionIndex(value: CharSequence): Int {
-        if (autofillOptions != null) {
-            return autofillOptions.indexOf(value)
-        } else {
-            return -1
-        }
+    fun getAutofillOptionIndex(value: CharSequence): Int? {
+        return autofillOptions?.indexOf(value)
     }
 
     private fun updateSaveTypeFromHints() {

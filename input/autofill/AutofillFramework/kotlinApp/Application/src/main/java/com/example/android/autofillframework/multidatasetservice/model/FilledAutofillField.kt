@@ -17,39 +17,30 @@ package com.example.android.autofillframework.multidatasetservice.model
 
 import android.app.assist.AssistStructure
 import android.view.autofill.AutofillValue
-import com.example.android.autofillframework.multidatasetservice.AutofillHelper
-import com.google.gson.annotations.Expose
 
 /**
  * JSON serializable data class containing the same data as an [AutofillValue].
  */
 class FilledAutofillField(viewNode: AssistStructure.ViewNode) {
-    @Expose
-    var textValue: String? = null
-
-    @Expose
+    var textValue: CharSequence? = null
     var dateValue: Long? = null
-
-    @Expose
     var toggleValue: Boolean? = null
 
-    val autofillHints = viewNode.autofillHints.filter(AutofillHelper::isValidHint).toTypedArray()
-
     init {
-        viewNode.autofillValue?.let {
-            if (it.isList) {
-                val index = it.listValue
+        viewNode.autofillValue?.let { autofillValue ->
+            if (autofillValue.isList) {
+                val index = autofillValue.listValue
                 viewNode.autofillOptions?.let { autofillOptions ->
                     if (autofillOptions.size > index) {
-                        textValue = autofillOptions[index].toString()
+                        textValue = autofillOptions[index]
                     }
                 }
-            } else if (it.isDate) {
-                dateValue = it.dateValue
-            } else if (it.isText) {
+            } else if (autofillValue.isDate) {
+                dateValue = autofillValue.dateValue
+            } else if (autofillValue.isText) {
                 // Using toString of AutofillValue.getTextValue in order to save it to
                 // SharedPreferences.
-                textValue = it.textValue.toString()
+                textValue = autofillValue.textValue.toString()
             } else {
             }
         }

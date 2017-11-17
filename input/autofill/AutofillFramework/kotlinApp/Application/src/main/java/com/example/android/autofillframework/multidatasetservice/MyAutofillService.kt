@@ -23,7 +23,6 @@ import android.service.autofill.FillResponse
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import android.util.Log
-import android.widget.Toast
 import com.example.android.autofillframework.CommonUtil.TAG
 import com.example.android.autofillframework.CommonUtil.bundleToString
 import com.example.android.autofillframework.R
@@ -34,15 +33,17 @@ class MyAutofillService : AutofillService() {
 
     override fun onFillRequest(request: FillRequest, cancellationSignal: CancellationSignal,
             callback: FillCallback) {
-        val structure = request.fillContexts[request.fillContexts.size - 1].structure
-        val packageName = structure.activityComponent.packageName
-        if (!PackageVerifier.isValidPackage(applicationContext, packageName)) {
-            Toast.makeText(applicationContext, R.string.invalid_package_signature,
-                    Toast.LENGTH_SHORT).show()
-            return
-        }
+        val structure = request.getFillContexts().get(request.getFillContexts().size - 1).structure
         val data = request.clientState
         Log.d(TAG, "onFillRequest(): data=" + bundleToString(data))
+
+        // Temporary hack for disabling autofill for components in this autofill service.
+        // i.e. we don't want to autofill components in AuthActivity.
+        if (structure.activityComponent.toShortString()
+                .contains("com.example.android.autofillframework.service")) {
+            callback.onSuccess(null)
+            return
+        }
         cancellationSignal.setOnCancelListener { Log.w(TAG, "Cancel autofill not implemented in this sample.") }
         // Parse AutoFill data in Activity
         val parser = StructureParser(structure)
@@ -52,18 +53,18 @@ class MyAutofillService : AutofillService() {
         val responseBuilder = FillResponse.Builder()
         // Check user's settings for authenticating Responses and Datasets.
         val responseAuth = MyPreferences.isResponseAuth(this)
-        if (responseAuth && autofillFields.autofillIds.size > 0) {
+        if (responseAuth) {
             // If the entire Autofill Response is authenticated, AuthActivity is used
             // to generate Response.
             val sender = AuthActivity.getAuthIntentSenderForResponse(this)
             val presentation = AutofillHelper
-                    .newRemoteViews(packageName, getString(R.string.autofill_sign_in_prompt), R.drawable.ic_lock_black_24dp)
+                    .newRemoteViews(packageName, getString(R.string.autofill_sign_in_prompt))
             responseBuilder
                     .setAuthentication(autofillFields.autofillIds.toTypedArray(), sender, presentation)
             callback.onSuccess(responseBuilder.build())
         } else {
             val datasetAuth = MyPreferences.isDatasetAuth(this)
-            val clientFormDataMap = SharedPrefsAutofillRepository.getFilledAutofillFieldCollection(this,
+            val clientFormDataMap = SharedPrefsAutofillRepository.getClientFormData(this,
                     autofillFields.focusedAutofillHints, autofillFields.allAutofillHints)
             val response = AutofillHelper.newResponse(this, datasetAuth, autofillFields, clientFormDataMap)
             callback.onSuccess(response)
@@ -73,18 +74,11 @@ class MyAutofillService : AutofillService() {
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
         val context = request.fillContexts
         val structure = context[context.size - 1].structure
-        val packageName = structure.activityComponent.packageName
-        if (!PackageVerifier.isValidPackage(applicationContext, packageName)) {
-            Toast.makeText(applicationContext, R.string.invalid_package_signature,
-                    Toast.LENGTH_SHORT).show()
-            return
-        }
         val data = request.clientState
         Log.d(TAG, "onSaveRequest(): data=" + bundleToString(data))
         val parser = StructureParser(structure)
         parser.parseForSave()
-        SharedPrefsAutofillRepository.saveFilledAutofillFieldCollection(this,
-                parser.filledAutofillFieldCollection)
+        SharedPrefsAutofillRepository.saveClientFormData(this, parser.filledAutofillFieldCollection)
     }
 
     override fun onConnected() {

@@ -19,18 +19,19 @@ import android.app.assist.AssistStructure
 import android.app.assist.AssistStructure.ViewNode
 import android.util.Log
 import com.example.android.autofillframework.CommonUtil.TAG
-import com.example.android.autofillframework.multidatasetservice.model.FilledAutofillField
 import com.example.android.autofillframework.multidatasetservice.model.FilledAutofillFieldCollection
+import com.example.android.autofillframework.multidatasetservice.model.FilledAutofillField
 
 /**
  * Parser for an AssistStructure object. This is invoked when the Autofill Service receives an
  * AssistStructure from the client Activity, representing its View hierarchy. In this sample, it
  * parses the hierarchy and collects autofill metadata from {@link ViewNode}s along the way.
  */
-internal class StructureParser(private val autofillStructure: AssistStructure) {
+internal class StructureParser(private val mStructure: AssistStructure) {
     val autofillFields = AutofillFieldMetadataCollection()
     var filledAutofillFieldCollection: FilledAutofillFieldCollection = FilledAutofillFieldCollection()
         private set
+
 
     fun parseForFill() {
         parse(true)
@@ -44,11 +45,13 @@ internal class StructureParser(private val autofillStructure: AssistStructure) {
      * Traverse AssistStructure and add ViewNode metadata to a flat list.
      */
     private fun parse(forFill: Boolean) {
-        Log.d(TAG, "Parsing structure for " + autofillStructure.activityComponent)
-        val nodes = autofillStructure.windowNodeCount
+        Log.d(TAG, "Parsing structure for " + mStructure.activityComponent)
+        val nodes = mStructure.windowNodeCount
         filledAutofillFieldCollection = FilledAutofillFieldCollection()
-        for (i in 0 until nodes) {
-            parseLocked(forFill, autofillStructure.getWindowNodeAt(i).rootViewNode)
+        for (i in 0..nodes - 1) {
+            val node = mStructure.getWindowNodeAt(i)
+            val view = node.rootViewNode
+            parseLocked(forFill, view)
         }
     }
 
@@ -58,14 +61,16 @@ internal class StructureParser(private val autofillStructure: AssistStructure) {
                 if (forFill) {
                     autofillFields.add(AutofillFieldMetadata(viewNode))
                 } else {
-                    filledAutofillFieldCollection.add(FilledAutofillField(viewNode))
+                    filledAutofillFieldCollection.setAutofillValuesForHints(viewNode.autofillHints,
+                            FilledAutofillField(viewNode))
                 }
             }
         }
         val childrenSize = viewNode.childCount
-        for (i in 0 until childrenSize) {
-            parseLocked(forFill, viewNode.getChildAt(i))
-
+        if (childrenSize > 0) {
+            for (i in 0..childrenSize - 1) {
+                parseLocked(forFill, viewNode.getChildAt(i))
+            }
         }
     }
 }

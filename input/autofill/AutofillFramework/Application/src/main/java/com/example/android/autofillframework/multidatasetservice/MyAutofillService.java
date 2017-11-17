@@ -27,17 +27,13 @@ import android.service.autofill.FillResponse;
 import android.service.autofill.SaveCallback;
 import android.service.autofill.SaveRequest;
 import android.util.Log;
-import android.view.autofill.AutofillId;
 import android.widget.RemoteViews;
-import android.widget.Toast;
 
 import com.example.android.autofillframework.R;
 import com.example.android.autofillframework.multidatasetservice.datasource.SharedPrefsAutofillRepository;
-import com.example.android.autofillframework.multidatasetservice.datasource.SharedPrefsPackageVerificationRepository;
 import com.example.android.autofillframework.multidatasetservice.model.FilledAutofillFieldCollection;
 import com.example.android.autofillframework.multidatasetservice.settings.MyPreferences;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -51,16 +47,16 @@ public class MyAutofillService extends AutofillService {
             FillCallback callback) {
         AssistStructure structure = request.getFillContexts()
                 .get(request.getFillContexts().size() - 1).getStructure();
-        String packageName = structure.getActivityComponent().getPackageName();
-        if (!SharedPrefsPackageVerificationRepository.getInstance()
-                .putPackageSignatures(getApplicationContext(), packageName)) {
-            Toast.makeText(getApplicationContext(), R.string.invalid_package_signature,
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
         final Bundle data = request.getClientState();
         Log.d(TAG, "onFillRequest(): data=" + bundleToString(data));
 
+        // Temporary hack for disabling autofill for components in this autofill service.
+        // i.e. we don't want to autofill components in AuthActivity.
+        if (structure.getActivityComponent().toShortString()
+                .contains("com.example.android.autofillframework.service")) {
+            callback.onSuccess(null);
+            return;
+        }
         cancellationSignal.setOnCancelListener(new CancellationSignal.OnCancelListener() {
             @Override
             public void onCancel() {
@@ -74,22 +70,20 @@ public class MyAutofillService extends AutofillService {
         FillResponse.Builder responseBuilder = new FillResponse.Builder();
         // Check user's settings for authenticating Responses and Datasets.
         boolean responseAuth = MyPreferences.getInstance(this).isResponseAuth();
-        AutofillId[] autofillIds = autofillFields.getAutofillIds();
-        if (responseAuth && !Arrays.asList(autofillIds).isEmpty()) {
+        if (responseAuth) {
             // If the entire Autofill Response is authenticated, AuthActivity is used
             // to generate Response.
             IntentSender sender = AuthActivity.getAuthIntentSenderForResponse(this);
             RemoteViews presentation = AutofillHelper
-                    .newRemoteViews(getPackageName(), getString(R.string.autofill_sign_in_prompt),
-                            R.drawable.ic_lock_black_24dp);
+                    .newRemoteViews(getPackageName(), getString(R.string.autofill_sign_in_prompt));
             responseBuilder
-                    .setAuthentication(autofillIds, sender, presentation);
+                    .setAuthentication(autofillFields.getAutofillIds(), sender, presentation);
             callback.onSuccess(responseBuilder.build());
         } else {
             boolean datasetAuth = MyPreferences.getInstance(this).isDatasetAuth();
             HashMap<String, FilledAutofillFieldCollection> clientFormDataMap =
-                    SharedPrefsAutofillRepository.getInstance().getFilledAutofillFieldCollection
-                            (this, autofillFields.getFocusedHints(), autofillFields.getAllHints());
+                    SharedPrefsAutofillRepository.getInstance(this).getClientFormData
+                            (autofillFields.getFocusedHints(), autofillFields.getAllHints());
             FillResponse response = AutofillHelper.newResponse
                     (this, datasetAuth, autofillFields, clientFormDataMap);
             callback.onSuccess(response);
@@ -100,20 +94,12 @@ public class MyAutofillService extends AutofillService {
     public void onSaveRequest(SaveRequest request, SaveCallback callback) {
         List<FillContext> context = request.getFillContexts();
         final AssistStructure structure = context.get(context.size() - 1).getStructure();
-        String packageName = structure.getActivityComponent().getPackageName();
-        if (!SharedPrefsPackageVerificationRepository.getInstance()
-                .putPackageSignatures(getApplicationContext(), packageName)) {
-            Toast.makeText(getApplicationContext(), R.string.invalid_package_signature,
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
         final Bundle data = request.getClientState();
         Log.d(TAG, "onSaveRequest(): data=" + bundleToString(data));
         StructureParser parser = new StructureParser(structure);
         parser.parseForSave();
         FilledAutofillFieldCollection filledAutofillFieldCollection = parser.getClientFormData();
-        SharedPrefsAutofillRepository.getInstance()
-                .saveFilledAutofillFieldCollection(this, filledAutofillFieldCollection);
+        SharedPrefsAutofillRepository.getInstance(this).saveClientFormData(filledAutofillFieldCollection);
     }
 
     @Override

@@ -70,11 +70,9 @@ class SettingsActivity : AppCompatActivity() {
                 settings_auth_credentials_label,
                 settings_auth_credentials_icon,
                 View.OnClickListener {
-                    if (MyPreferences.getMasterPassword(this@SettingsActivity) != null) {
+                    MyPreferences.getMasterPassword(this@SettingsActivity)?.let {
                         buildCurrentCredentialsDialog().show()
-                    } else {
-                        buildNewCredentialsDialog().show()
-                    }
+                    } ?: buildNewCredentialsDialog().show()
                 })
     }
 
@@ -134,12 +132,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun setupSettingsSwitch(container: ViewGroup, switchLabelView: TextView, switchView: Switch, checked: Boolean,
             checkedChangeListener: CompoundButton.OnCheckedChangeListener) {
         val switchLabel = switchLabelView.text.toString()
-        with(switchView) {
-            contentDescription = switchLabel
-            isChecked = checked
-            setOnCheckedChangeListener(checkedChangeListener)
-        }
+        switchView.contentDescription = switchLabel
+        switchView.isChecked = checked
         container.setOnClickListener { switchView.performClick() }
+        switchView.setOnCheckedChangeListener(checkedChangeListener)
     }
 
     private fun setupSettingsButton(container: ViewGroup, buttonLabelView: TextView, imageView: ImageView,

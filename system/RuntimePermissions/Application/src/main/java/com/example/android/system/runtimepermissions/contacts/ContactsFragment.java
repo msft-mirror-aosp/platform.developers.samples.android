@@ -16,6 +16,9 @@
 
 package com.example.android.system.runtimepermissions.contacts;
 
+import com.example.android.common.logger.Log;
+import com.example.android.system.runtimepermissions.R;
+
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.OperationApplicationException;
@@ -24,7 +27,6 @@ import android.os.Bundle;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -34,8 +36,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-
-import com.example.android.system.runtimepermissions.R;
 
 import java.util.ArrayList;
 
@@ -54,6 +54,10 @@ import java.util.ArrayList;
 public class ContactsFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final String TAG = "Contacts";
+    private TextView mMessageText = null;
+
+    private static String DUMMY_CONTACT_NAME = "__DUMMY CONTACT from runtime permissions sample";
+
     /**
      * Projection for the content provider query includes the id and primary name of a contact.
      */
@@ -63,9 +67,7 @@ public class ContactsFragment extends Fragment implements LoaderManager.LoaderCa
      * Sort order for the query. Sorted by primary name in ascending order.
      */
     private static final String ORDER = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " ASC";
-    private static String DUMMY_CONTACT_NAME = "__DUMMY CONTACT from runtime permissions sample";
 
-    private TextView mMessageText;
 
     /**
      * Creates a new instance of a ContactsFragment.
@@ -81,10 +83,10 @@ public class ContactsFragment extends Fragment implements LoaderManager.LoaderCa
             Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_contacts, container, false);
 
-        mMessageText = rootView.findViewById(R.id.contact_message);
+        mMessageText = (TextView) rootView.findViewById(R.id.contact_message);
 
         // Register a listener to add a dummy contact when a button is clicked.
-        Button button = rootView.findViewById(R.id.contact_add);
+        Button button = (Button) rootView.findViewById(R.id.contact_add);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -93,7 +95,7 @@ public class ContactsFragment extends Fragment implements LoaderManager.LoaderCa
         });
 
         // Register a listener to display the first contact when a button is clicked.
-        button = rootView.findViewById(R.id.contact_load);
+        button = (Button) rootView.findViewById(R.id.contact_load);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -125,6 +127,7 @@ public class ContactsFragment extends Fragment implements LoaderManager.LoaderCa
      */
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+
         if (cursor != null) {
             final int totalCount = cursor.getCount();
             if (totalCount > 0) {
@@ -133,7 +136,11 @@ public class ContactsFragment extends Fragment implements LoaderManager.LoaderCa
                         .getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
                 mMessageText.setText(
                         getResources().getString(R.string.contacts_string, totalCount, name));
+                Log.d(TAG, "First contact loaded: " + name);
+                Log.d(TAG, "Total number of contacts: " + totalCount);
+                Log.d(TAG, "Total number of contacts: " + totalCount);
             } else {
+                Log.d(TAG, "List of contacts is empty.");
                 mMessageText.setText(R.string.contacts_empty);
             }
         }
@@ -173,9 +180,10 @@ public class ContactsFragment extends Fragment implements LoaderManager.LoaderCa
         ContentResolver resolver = getActivity().getContentResolver();
         try {
             resolver.applyBatch(ContactsContract.AUTHORITY, operations);
-        } catch (RemoteException | OperationApplicationException e) {
-            Snackbar.make(mMessageText.getRootView(), "Could not add a new contact: " +
-                    e.getMessage(), Snackbar.LENGTH_LONG);
+        } catch (RemoteException e) {
+            Log.d(TAG, "Could not add a new contact: " + e.getMessage());
+        } catch (OperationApplicationException e) {
+            Log.d(TAG, "Could not add a new contact: " + e.getMessage());
         }
     }
 }
