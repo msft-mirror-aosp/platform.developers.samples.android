@@ -21,11 +21,20 @@ import android.app.assist.AssistStructure.WindowNode;
 import android.content.Context;
 import android.view.autofill.AutofillValue;
 
-import com.example.android.autofill.service.datasource.SharedPrefsDigitalAssetLinksRepository;
+import com.example.android.autofill.service.datasource.DataCallback;
+import com.example.android.autofill.service.datasource.local.DigitalAssetLinksRepository;
+import com.example.android.autofill.service.datasource.local.LocalAutofillDataSource;
+import com.example.android.autofill.service.model.AutofillDataset;
+import com.example.android.autofill.service.model.DalCheck;
+import com.example.android.autofill.service.model.DalInfo;
 import com.example.android.autofill.service.model.FilledAutofillField;
 import com.example.android.autofill.service.model.FilledAutofillFieldCollection;
 
-import static com.example.android.autofill.service.Util.logd;
+import java.util.List;
+import java.util.UUID;
+
+import static com.example.android.autofill.service.util.Util.logd;
+import static com.example.android.autofill.service.util.Util.logw;
 
 /**
  * Parser for an AssistStructure object. This is invoked when the Autofill Service receives an
@@ -35,12 +44,16 @@ import static com.example.android.autofill.service.Util.logd;
 final class StructureParser {
     private final AutofillFieldMetadataCollection mAutofillFields =
             new AutofillFieldMetadataCollection();
-    private final Context mContext;
+    private final LocalAutofillDataSource mLocalAutofillDataSource;
+    private final DigitalAssetLinksRepository mDalRepository;
     private final AssistStructure mStructure;
     private FilledAutofillFieldCollection mFilledAutofillFieldCollection;
 
-    StructureParser(Context context, AssistStructure structure) {
-        mContext = context;
+    StructureParser(Context context, AssistStructure structure,
+            LocalAutofillDataSource localAutofillDataSource,
+            DigitalAssetLinksRepository dalRepository) {
+        mLocalAutofillDataSource = localAutofillDataSource;
+        mDalRepository = dalRepository;
         mStructure = structure;
     }
 
@@ -58,7 +71,10 @@ final class StructureParser {
     private void parse(boolean forFill) {
         logd("Parsing structure for %s", mStructure.getActivityComponent());
         int nodes = mStructure.getWindowNodeCount();
-        mFilledAutofillFieldCollection = new FilledAutofillFieldCollection();
+        String datasetName = "dataset-" + mLocalAutofillDataSource.getDatasetNumber();
+        String datasetId = UUID.randomUUID().toString();
+        AutofillDataset dataset = new AutofillDataset(datasetId, datasetName);
+        mFilledAutofillFieldCollection = new FilledAutofillFieldCollection(dataset);
         StringBuilder webDomain = new StringBuilder();
         for (int i = 0; i < nodes; i++) {
             WindowNode node = mStructure.getWindowNodeAt(i);
@@ -67,13 +83,27 @@ final class StructureParser {
         }
         if (webDomain.length() > 0) {
             String packageName = mStructure.getActivityComponent().getPackageName();
-            boolean valid = SharedPrefsDigitalAssetLinksRepository.getInstance().isValid(mContext,
-                    webDomain.toString(), packageName);
-            if (!valid) {
-                throw new SecurityException(mContext.getString(
-                        R.string.invalid_link_association, webDomain, packageName));
-            }
-            logd("Domain %s is valid for %s", webDomain, packageName);
+            mDalRepository.checkValid(new DalInfo(webDomain.toString(), packageName),
+                    new DataCallback<DalCheck>() {
+                @Override
+                public void onLoaded(DalCheck dalCheck) {
+                    if (dalCheck.linked) {
+                        logd("Domain %s is valid for %s", webDomain, packageName);
+                    } else {
+                        throw new SecurityException(String.format(
+                                "Could not associate web domain %s with app %s", webDomain,
+                                packageName));
+                    }
+                }
+
+                @Override
+                public void onDataNotAvailable(String msg, Object... params) {
+                    logw(msg, params);
+                    throw new SecurityException(String.format(
+                            "Could not associate web domain %s with app %s", webDomain,
+                            packageName));
+                }
+            });
         } else {
             logd("no web domain");
         }
@@ -100,20 +130,34 @@ final class StructureParser {
                 if (forFill) {
                     mAutofillFields.add(new AutofillFieldMetadata(viewNode));
                 } else {
-                    FilledAutofillField filledAutofillField =
-                            new FilledAutofillField(viewNode.getAutofillHints());
                     AutofillValue autofillValue = viewNode.getAutofillValue();
-                    if (autofillValue.isText()) {
-                        // Using toString of AutofillValue.getTextValue in order to save it to
-                        // SharedPreferences.
-                        filledAutofillField.setTextValue(autofillValue.getTextValue().toString());
-                    } else if (autofillValue.isDate()) {
-                        filledAutofillField.setDateValue(autofillValue.getDateValue());
-                    } else if (autofillValue.isList()) {
-                        filledAutofillField.setListValue(viewNode.getAutofillOptions(),
-                                autofillValue.getListValue());
+                    String textValue = null;
+                    Long dateValue = null;
+                    Boolean toggleValue = null;
+                    CharSequence[] autofillOptions = null;
+                    Integer listIndex = null;
+                    if (autofillValue != null) {
+                        if (autofillValue.isText()) {
+                            // Using toString of AutofillValue.getTextValue in order to save it to
+                            // SharedPreferences.
+                            textValue = autofillValue.getTextValue().toString();
+                        } else if (autofillValue.isDate()) {
+                            dateValue = autofillValue.getDateValue();
+                        } else if (autofillValue.isList()) {
+                            autofillOptions = viewNode.getAutofillOptions();
+                            listIndex = autofillValue.getListValue();
+                        } else if (autofillValue.isToggle()) {
+                            toggleValue = autofillValue.getToggleValue();
+                        }
                     }
-                    mFilledAutofillFieldCollection.add(filledAutofillField);
+                    List<FilledAutofillField> filledAutofillFields =
+                            FilledAutofillField.build(
+                                    mFilledAutofillFieldCollection.getDataset().getId(),
+                                    viewNode.getAutofillHints(),
+                                    textValue, dateValue, toggleValue, autofillOptions, listIndex);
+                    if (filledAutofillFields != null) {
+                        mFilledAutofillFieldCollection.add(filledAutofillFields);
+                    }
                 }
             }
         }
