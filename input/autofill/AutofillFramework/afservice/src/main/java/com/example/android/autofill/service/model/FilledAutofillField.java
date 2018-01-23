@@ -23,9 +23,12 @@ import android.support.annotation.NonNull;
 
 import javax.annotation.Nullable;
 
-@Entity(primaryKeys = {"datasetId", "hint"}, foreignKeys = @ForeignKey(
-        entity = AutofillDataset.class, parentColumns = "id", childColumns = "datasetId",
-        onDelete = ForeignKey.CASCADE))
+@Entity(primaryKeys = {"datasetId", "fieldTypeName"}, foreignKeys = {
+        @ForeignKey(entity = AutofillDataset.class, parentColumns = "id",
+                childColumns = "datasetId", onDelete = ForeignKey.CASCADE),
+        @ForeignKey(entity = FieldType.class, parentColumns = "typeName",
+                childColumns = "fieldTypeName", onDelete = ForeignKey.CASCADE)
+})
 public class FilledAutofillField {
 
     @NonNull
@@ -45,45 +48,52 @@ public class FilledAutofillField {
     private final Boolean mToggleValue;
 
     @NonNull
-    @ColumnInfo(name = "hint")
-    private final String mHint;
+    @ColumnInfo(name = "fieldTypeName")
+    private final String mFieldTypeName;
 
-    public FilledAutofillField(@NonNull String datasetId, @NonNull String hint,
-            @Nullable String textValue, @Nullable Long dateValue, @Nullable Boolean toggleValue) {
+    @NonNull
+    @ColumnInfo(name = "packageName")
+    private final String mPackageName;
+
+    public FilledAutofillField(@NonNull String datasetId, @NonNull String packageName,
+            @NonNull String fieldTypeName, @Nullable String textValue, @Nullable Long dateValue,
+            @Nullable Boolean toggleValue) {
         mDatasetId = datasetId;
-        mHint = hint;
+        mPackageName = packageName;
+        mFieldTypeName = fieldTypeName;
         mTextValue = textValue;
         mDateValue = dateValue;
         mToggleValue = toggleValue;
     }
 
     @Ignore
-    public FilledAutofillField(@NonNull String datasetId, @NonNull String hint,
-            @Nullable String textValue, @Nullable Long dateValue) {
-        this(datasetId, hint, textValue, dateValue, null);
+    public FilledAutofillField(@NonNull String datasetId, @NonNull String packageName,
+            @NonNull String fieldTypeName, @Nullable String textValue, @Nullable Long dateValue) {
+        this(datasetId, packageName, fieldTypeName, textValue, dateValue, null);
     }
 
     @Ignore
-    public FilledAutofillField(@NonNull String datasetId, @NonNull String hint,
-            @Nullable String textValue) {
-        this(datasetId, hint, textValue, null, null);
+    public FilledAutofillField(@NonNull String datasetId, @NonNull String packageName,
+            @NonNull String fieldTypeName, @Nullable String textValue) {
+        this(datasetId, packageName, fieldTypeName, textValue, null, null);
     }
 
     @Ignore
-    public FilledAutofillField(@NonNull String datasetId, @NonNull String hint,
-            @Nullable Long dateValue) {
-        this(datasetId, hint, null, dateValue, null);
+    public FilledAutofillField(@NonNull String datasetId, @NonNull String packageName,
+            @NonNull String fieldTypeName, @Nullable Long dateValue) {
+        this(datasetId, packageName, fieldTypeName, null, dateValue, null);
     }
 
     @Ignore
-    public FilledAutofillField(@NonNull String datasetId, @NonNull String hint,
-            @Nullable Boolean toggleValue) {
-        this(datasetId, hint, null, null, toggleValue);
+    public FilledAutofillField(@NonNull String datasetId, @NonNull String packageName,
+            @NonNull String fieldTypeName, @Nullable Boolean toggleValue) {
+        this(datasetId, packageName, fieldTypeName, null, null, toggleValue);
     }
 
     @Ignore
-    public FilledAutofillField(@NonNull String datasetId, @NonNull String hint) {
-        this(datasetId, hint, null, null, null);
+    public FilledAutofillField(@NonNull String datasetId, @NonNull String packageName,
+            @NonNull String fieldTypeName) {
+        this(datasetId, packageName, fieldTypeName, null, null, null);
     }
 
     @NonNull
@@ -107,8 +117,13 @@ public class FilledAutofillField {
     }
 
     @NonNull
-    public String getHint() {
-        return mHint;
+    public String getFieldTypeName() {
+        return mFieldTypeName;
+    }
+
+    @NonNull
+    public String getPackageName() {
+        return mPackageName;
     }
 
     public boolean isNull() {
@@ -122,19 +137,25 @@ public class FilledAutofillField {
 
         FilledAutofillField that = (FilledAutofillField) o;
 
+        if (!mDatasetId.equals(that.mDatasetId)) return false;
         if (mTextValue != null ? !mTextValue.equals(that.mTextValue) : that.mTextValue != null)
             return false;
         if (mDateValue != null ? !mDateValue.equals(that.mDateValue) : that.mDateValue != null)
             return false;
-        return mToggleValue != null ? mToggleValue.equals(that.mToggleValue) :
-                that.mToggleValue == null;
+        if (mToggleValue != null ? !mToggleValue.equals(that.mToggleValue) : that.mToggleValue != null)
+            return false;
+        if (!mFieldTypeName.equals(that.mFieldTypeName)) return false;
+        return mPackageName.equals(that.mPackageName);
     }
 
     @Override
     public int hashCode() {
-        int result = mTextValue != null ? mTextValue.hashCode() : 0;
+        int result = mDatasetId.hashCode();
+        result = 31 * result + (mTextValue != null ? mTextValue.hashCode() : 0);
         result = 31 * result + (mDateValue != null ? mDateValue.hashCode() : 0);
         result = 31 * result + (mToggleValue != null ? mToggleValue.hashCode() : 0);
+        result = 31 * result + mFieldTypeName.hashCode();
+        result = 31 * result + mPackageName.hashCode();
         return result;
     }
 }

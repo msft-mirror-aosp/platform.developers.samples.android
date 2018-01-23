@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><!--
+/*
  * Copyright (C) 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
--->
-<resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
-    <color name="light_grey">#ffeeeeee</color>
-</resources>
+ */
+
+package com.example.android.autofill.service.model;
+
+import com.example.android.autofill.service.data.source.local.db.Converters;
+
+public class FakeData {
+    public Converters.StringList strictExampleSet;
+    public String textTemplate;
+    public String dateTemplate;
+
+    public FakeData(Converters.StringList strictExampleSet, String textTemplate, String dateTemplate) {
+        this.strictExampleSet = strictExampleSet;
+        this.textTemplate = textTemplate;
+        this.dateTemplate = dateTemplate;
+    }
+}
