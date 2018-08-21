@@ -15,6 +15,12 @@
 -->
 
 <autofill-service xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- sample app -->
+  <compatibility-package
+    android:name="com.example.android.autofill.app"
+    android:maxLongVersionCode="10000000000"/>
+
+  <!-- well-known browswers -->
   <compatibility-package
     android:name="com.android.chrome"
     android:maxLongVersionCode="10000000000"/>
