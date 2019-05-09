@@ -1,20 +1,20 @@
 
 buildscript {
     repositories {
-        jcenter()
         google()
+        jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.0-beta01'
+        classpath 'com.android.tools.build:gradle:3.2.1'
     }
 }
 
 apply plugin: 'com.android.library'
 
 repositories {
-    jcenter()
     google()
+    jcenter()
 }
 
 dependencies {
@@ -32,7 +32,7 @@ List<String> dirs = [
 android {
     compileSdkVersion 28
 
-    buildToolsVersion "27.0.3"
+    buildToolsVersion "28.0.3"
 
     defaultConfig {
         minSdkVersion 18
