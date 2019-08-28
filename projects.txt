@@ -104,16 +104,3 @@ ui/window/ImmersiveMode
 ui/window/MultiWindowPlayground
 views/EmojiCompat
 views/TextLinkify
-wearable/wear/AlwaysOn
-wearable/wear/DataLayer
-wearable/wear/JumpingJack
-wearable/wear/RuntimePermissionsWear
-wearable/wear/SpeedTracker
-wearable/wear/WatchFace
-wearable/wear/WearComplicationProvidersTestSuite
-wearable/wear/WearDrawers
-wearable/wear/WearHighBandwidthNetworking
-wearable/wear/WearNotifications
-wearable/wear/WearSpeakerSample
-wearable/wear/WearVerifyRemoteApp
-wearable/wear/XYZTouristAttractions
