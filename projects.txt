@@ -66,13 +66,11 @@ system/RuntimePermissionsBasic
 testing/ActivityInstrumentation
 ui/DarkTheme
 ui/DrawableTinting
-ui/Interpolator
 ui/accessibility/BasicAccessibility
 ui/actionbar/DoneBar
 ui/actionbarcompat/ActionBarCompat-Basic
 ui/actionbarcompat/ActionBarCompat-ListPopupMenu
 ui/actionbarcompat/ActionBarCompat-Styled
-ui/activityscenetransition/ActivitySceneTransitionBasic
 ui/activitytasks/DocumentCentricApps
 ui/activitytasks/DocumentCentricRelinquishIdentity
 ui/fonts/DownloadableFonts
@@ -80,8 +78,6 @@ ui/graphics/DisplayingBitmaps
 ui/graphics/PdfRendererBasic
 ui/holo/BorderlessButtons
 ui/lists/CustomChoiceList
-ui/transition/BasicTransition
-ui/transition/CustomTransition
 ui/views/CardView
 ui/views/Clipping/ClippingBasic
 ui/views/Elevation/ElevationBasic
@@ -90,13 +86,11 @@ ui/views/FloatingActionButton/FloatingActionButtonBasic
 ui/views/HorizontalPaging
 ui/views/NavigationDrawer
 ui/views/RecyclerView
-ui/views/RevealEffect/RevealEffectBasic
 ui/views/SlidingTabs/SlidingTabsBasic
 ui/views/SlidingTabs/SlidingTabsColors
 ui/views/SwipeRefreshLayout/SwipeRefreshLayoutBasic
 ui/views/SwipeRefreshLayout/SwipeRefreshListFragment
 ui/views/SwipeRefreshLayout/SwipeRefreshMultipleViews
-ui/views/TextSwitcher
 ui/window/AdvancedImmersiveMode
 ui/window/BasicImmersiveMode
 ui/window/DragAndDropAcrossApps
