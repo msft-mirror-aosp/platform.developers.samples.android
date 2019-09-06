@@ -33,10 +33,6 @@ input/keyboard/CommitContentSampleIME
 input/multitouch/BasicMultitouch
 media/BasicMediaDecoder
 media/BasicMediaRouter
-media/Camera2Basic
-media/Camera2Raw
-media/Camera2Video
-media/HdrViewfinder
 media/MediaBrowserService
 media/MediaEffects
 media/MediaRecorder
