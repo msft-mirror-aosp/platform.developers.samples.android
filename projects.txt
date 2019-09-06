@@ -15,15 +15,8 @@ connectivity/nfc/CardEmulation
 connectivity/nfc/CardReader
 connectivity/sync/BasicSyncAdapter
 content/AutoBackupForApps
-content/DirectShare
-content/ShareActionProvider
-content/SharingShortcuts
 content/contacts/BasicContactables
-content/documentsUi/ContentProviderPaging
-content/documentsUi/DirectorySelection
 content/documentsUi/ScopedDirectoryAccess
-content/documentsUi/StorageClient
-content/documentsUi/StorageProvider
 content/multiuser/AppRestrictions
 content/webview/PermissionRequest
 input/autofill/AutofillFramework
