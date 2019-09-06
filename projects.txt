@@ -47,11 +47,6 @@ notification/CustomNotifications
 notification/LNotifications
 notification/MessagingService
 notification/NotificationChannels
-security/AsymmetricFingerprintDialog
-security/ConfirmCredential
-security/DirectBoot
-security/FingerprintDialog
-security/keystore/BasicAndroidKeyStore
 sensors/BatchStepSensor
 system/AppShortcuts
 system/AppUsageStatistics
