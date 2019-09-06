@@ -47,8 +47,6 @@ notification/CustomNotifications
 notification/LNotifications
 notification/MessagingService
 notification/NotificationChannels
-renderScript/BasicRenderScript
-renderScript/RenderScriptIntrinsic
 security/AsymmetricFingerprintDialog
 security/ConfirmCredential
 security/DirectBoot
