@@ -1,8 +1,3 @@
-admin/AppRestrictionEnforcer
-admin/AppRestrictionSchema
-admin/BasicManagedProfile
-admin/DeviceOwner
-admin/NfcProvisioning
 background/JobScheduler
 background/alarms/RepeatingAlarm
 connectivity/bluetooth/BluetoothAdvertisements
@@ -17,7 +12,6 @@ connectivity/sync/BasicSyncAdapter
 content/AutoBackupForApps
 content/contacts/BasicContactables
 content/documentsUi/ScopedDirectoryAccess
-content/multiuser/AppRestrictions
 content/webview/PermissionRequest
 input/autofill/AutofillFramework
 input/gestures/BasicGestureDetect
