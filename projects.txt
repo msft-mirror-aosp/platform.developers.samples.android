@@ -1,13 +1,5 @@
 background/JobScheduler
 background/alarms/RepeatingAlarm
-connectivity/bluetooth/BluetoothAdvertisements
-connectivity/bluetooth/BluetoothChat
-connectivity/bluetooth/BluetoothLeGatt
-connectivity/network/BasicNetworking
-connectivity/network/NetworkConnect
-connectivity/nfc/BeamLargeFiles
-connectivity/nfc/CardEmulation
-connectivity/nfc/CardReader
 connectivity/sync/BasicSyncAdapter
 content/AutoBackupForApps
 content/contacts/BasicContactables
