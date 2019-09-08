@@ -46,7 +46,6 @@ ui/actionbarcompat/ActionBarCompat-Basic
 ui/actionbarcompat/ActionBarCompat-ListPopupMenu
 ui/actionbarcompat/ActionBarCompat-Styled
 ui/activitytasks/DocumentCentricApps
-ui/activitytasks/DocumentCentricRelinquishIdentity
 ui/fonts/DownloadableFonts
 ui/holo/BorderlessButtons
 ui/lists/CustomChoiceList
