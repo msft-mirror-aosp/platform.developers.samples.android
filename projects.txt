@@ -27,7 +27,6 @@ input/multitouch/BasicMultitouch
 media/BasicMediaDecoder
 media/BasicMediaRouter
 media/MediaBrowserService
-media/MediaEffects
 media/MediaRecorder
 media/MediaRouter
 media/MidiScope
@@ -47,7 +46,6 @@ system/RuntimePermissions
 system/RuntimePermissionsBasic
 testing/ActivityInstrumentation
 ui/DarkTheme
-ui/DrawableTinting
 ui/accessibility/BasicAccessibility
 ui/actionbar/DoneBar
 ui/actionbarcompat/ActionBarCompat-Basic
@@ -56,8 +54,6 @@ ui/actionbarcompat/ActionBarCompat-Styled
 ui/activitytasks/DocumentCentricApps
 ui/activitytasks/DocumentCentricRelinquishIdentity
 ui/fonts/DownloadableFonts
-ui/graphics/DisplayingBitmaps
-ui/graphics/PdfRendererBasic
 ui/holo/BorderlessButtons
 ui/lists/CustomChoiceList
 ui/views/CardView
