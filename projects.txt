@@ -28,14 +28,5 @@ ui/DarkTheme
 ui/accessibility/BasicAccessibility
 ui/holo/BorderlessButtons
 ui/lists/CustomChoiceList
-ui/views/CardView
-ui/views/FloatingActionButton/FloatingActionButtonBasic
 ui/views/HorizontalPaging
-ui/views/NavigationDrawer
-ui/views/RecyclerView
-ui/views/SlidingTabs/SlidingTabsBasic
-ui/views/SlidingTabs/SlidingTabsColors
-ui/views/SwipeRefreshLayout/SwipeRefreshLayoutBasic
 ui/views/SwipeRefreshLayout/SwipeRefreshListFragment
-ui/views/SwipeRefreshLayout/SwipeRefreshMultipleViews
-ui/window/MultiWindowPlayground
