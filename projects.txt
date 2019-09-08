@@ -13,11 +13,6 @@ content/AutoBackupForApps
 content/contacts/BasicContactables
 content/documentsUi/ScopedDirectoryAccess
 content/webview/PermissionRequest
-input/autofill/AutofillFramework
-input/gestures/BasicGestureDetect
-input/keyboard/CommitContentSampleApp
-input/keyboard/CommitContentSampleIME
-input/multitouch/BasicMultitouch
 media/BasicMediaDecoder
 media/BasicMediaRouter
 media/MediaBrowserService
