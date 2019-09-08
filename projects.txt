@@ -33,7 +33,6 @@ notification/CustomNotifications
 notification/LNotifications
 notification/MessagingService
 notification/NotificationChannels
-sensors/BatchStepSensor
 system/AppShortcuts
 system/AppUsageStatistics
 system/RuntimePermissions
