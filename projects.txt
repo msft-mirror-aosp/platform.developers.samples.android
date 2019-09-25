@@ -5,15 +5,6 @@ content/AutoBackupForApps
 content/contacts/BasicContactables
 content/documentsUi/ScopedDirectoryAccess
 content/webview/PermissionRequest
-media/BasicMediaDecoder
-media/BasicMediaRouter
-media/MediaBrowserService
-media/MediaRecorder
-media/MediaRouter
-media/MidiScope
-media/MidiSynth
-media/PictureInPicture
-media/ScreenCapture
 notification/ActiveNotifications
 notification/BasicNotifications
 notification/CustomNotifications
