@@ -4,7 +4,6 @@ connectivity/sync/BasicSyncAdapter
 content/AutoBackupForApps
 content/contacts/BasicContactables
 content/documentsUi/ScopedDirectoryAccess
-content/webview/PermissionRequest
 notification/ActiveNotifications
 notification/BasicNotifications
 notification/CustomNotifications
@@ -12,8 +11,6 @@ notification/LNotifications
 notification/MessagingService
 notification/NotificationChannels
 system/AppUsageStatistics
-system/RuntimePermissions
-system/RuntimePermissionsBasic
 testing/ActivityInstrumentation
 ui/DarkTheme
 ui/accessibility/BasicAccessibility
