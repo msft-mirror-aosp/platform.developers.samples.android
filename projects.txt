@@ -1,5 +1,2 @@
-background/JobScheduler
-background/alarms/RepeatingAlarm
 system/AppUsageStatistics
 testing/ActivityInstrumentation
-ui/DarkTheme
