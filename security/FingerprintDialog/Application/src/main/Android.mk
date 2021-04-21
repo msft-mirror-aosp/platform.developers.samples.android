@@ -22,6 +22,8 @@ LOCAL_STATIC_ANDROID_LIBRARIES := \
 LOCAL_MODULE_TAGS := samples
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 LOCAL_PACKAGE_NAME := FingerprintDialog
+LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0
+LOCAL_LICENSE_CONDITIONS := notice
 LOCAL_SDK_VERSION := current
 LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/res \
     prebuilts/sdk/current/support/v7/appcompat/res
